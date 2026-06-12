@@ -822,6 +822,31 @@
         </div>
     </div>
         
+
+    <h3 style="margin-top: 40px;">3.6 灵魂纽带：RDO 为什么拼了命也需要 EMC 的 Ctx？</h3>
+    <p style="font-size: 0.95em; color: #475569;">
+        在真实的芯片编码器架构中，存在一个极其核心但容易被忽略的协同关系：<strong>RDO (Rate-Distortion Optimization, 率失真优化) 与 EMC (CABAC) 之间的紧密交互</strong>。
+    </p>
+    <div style="background: #fff8f1; border-left: 4px solid #f97316; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+        <h4 style="margin-top: 0; color: #9a3412;">1. Ctx (Context) 究竟是什么？</h4>
+        <p style="font-size: 0.9em; line-height: 1.6; color: #7c2d12;">
+            我们可以把 <code>Ctx</code> 理解为<strong>“动态概率字典的索引”</strong>。当 CABAC 编码一个 Bin（比如当前块的 <code>cu_skip_flag</code>）时，它会根据<strong>空间相邻块（左、上）</strong>的状态计算出一个整数 <code>Ctx</code>。这个 <code>Ctx</code> 就像一把钥匙，打开了内部对应的一本概率字典（pStateIdx）。如果字典里写着“在此情境下 Skip 的概率是 95%”，那么 CABAC 就能以极其微小的代价（比如 0.05 bit）将其压缩。
+        </p>
+        
+        <h4 style="margin-top: 20px; color: #9a3412;">2. RDO 为什么要拿 Ctx？它在里面起什么作用？</h4>
+        <p style="font-size: 0.9em; line-height: 1.6; color: #7c2d12;">
+            <strong>真相是：RDO 必须在内部精确模拟 EMC 的行为！</strong><br><br>
+            RDO 的唯一目标是寻找 <code>Cost = Distortion + λ × Rate</code> 最小的模式。为了算出精确的 <code>Rate</code>（消耗的比特数），RDO 必须知道如果写一个 1 会消耗多少 bit。而这个代价，完全由当时的 <code>Ctx</code> 决定！<br><br>
+            在硬件实现中，RDO 内部通常会带一个<strong>“影子 CABAC (Bit Estimator)”</strong>：
+        </p>
+        <ul style="font-size: 0.9em; line-height: 1.6; color: #7c2d12; margin: 5px 0 0 20px;">
+            <li>RDO 尝试一种划分模式时，按照 EMC 的规则自己算出 <code>Ctx</code>。</li>
+            <li>RDO 查表得出当前 <code>Ctx</code> 对应的分数比特代价 (Fractional Bits LUT，例如 C-Model 中的 <code>getEntropyBits()</code>)。</li>
+            <li>RDO 累加这个精确代价，得出总 Cost 并做最终决策。</li>
+            <li>决策敲定后，才交给真正的 EMC 模块去驱动 <code>Range</code> 和 <code>Low</code> 进行硬件切分，并永久更新真实的概率字典。</li>
+        </ul>
+    </div>
+
 <h2 style="border-top: 2px solid #e2e8f0; padding-top: 30px; margin-top: 40px; color: var(--primary);">4. 深度解密：没有分隔符的比特流，解码端凭什么能看懂？</h2>
     <h3>4.1 宏观领航：FSM 状态机与协议默契</h3>
     <p style="font-size: 0.95em; color: #475569;">这是 CABAC 学习者最常问、也是直觉上最反常识的问题：<br>
