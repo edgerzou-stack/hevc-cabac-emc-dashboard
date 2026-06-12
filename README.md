@@ -1,42 +1,32 @@
 # HEVC CABAC EMC Dashboard
 
-这是一个旨在直观解析 **HEVC (H.265) 视频编码标准**中**算术编码 (CABAC)** 引擎底层硬件原理的**全互动式可视化沙盒**。
+![Hardware Architecture](https://img.shields.io/badge/Hardware-Architecture-3b82f6?style=for-the-badge)
+![HEVC CABAC](https://img.shields.io/badge/HEVC-CABAC_EMC-ec4899?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Active-10b981?style=for-the-badge)
 
-本平台将深奥枯燥的视频编解码标准、硬件 FSM (有限状态机) 设计理念、概率模型以及二值化算法，转化为可在浏览器中直接推演、观察的交互式组件。它不仅是一个文档，更是一个可以“步进调试”的 C-Model 微缩版模拟器。
+Welcome to the **HEVC CABAC EMC Dashboard** repository. This repository serves as a highly interactive, web-based visualization sandbox designed specifically to demystify the underlying hardware logic and arithmetic coding engine (CABAC) of the HEVC (H.265) video coding standard.
 
-## 🌟 核心功能特性
+All documentation is generated and hosted statically via GitHub Pages, ensuring an interactive, highly readable, and zero-drag "Geek Dashboard" experience for hardware and algorithm engineers.
 
-### 1. 宏观调度层 (System & Scheduling)
-* **Z-Scan 空间遍历引擎**：直观展示 64x64 CTU 树形结构的深度栈运转过程，以及 EMC (Entropy Coding Module) 的系统定位。
-* **异步 FIFO 架构演示**：解析多级并行流水线（Level/Bitstream FIFO）的设计美学与数据流向。
+## 📖 Live Document Links (GitHub Pages)
 
-### 2. 压缩引擎层 (CABAC Compression Engine)
-* **二值化全景映射与码表**：
-  - 完整呈现 4 大核心二值化兵法：定长码 (FL)、截断一元码 (TU)、指数哥伦布 (EGk)、截断莱斯 (TR)。
-  - 展示从 CU, PU 到 TU 层级各语法元素的特征映射与查表。
-* **无乘法区间划分推演 (Range LUT)**：
-  - 手动步进观察 `MVD=1` 时，`Range` 与 `Low` 的切分和归一化全过程。
-  - 揭秘芯片中查表 (LUT) 替代乘法器的核心奥秘。
-* **16 像素系数的“五趟扫描” (5-Pass Coding)**：
-  - 结合反向对角线扫描 (Reverse Diagonal Scan) 算法，单步推演 `sig_coeff_flag`、`gt1/gt2`、`sign` 和 `remaining` 的分离。
+You can directly access the interactive online documentation via the following link:
 
-### 3. 解密“无分隔符比特流”
-* **幽灵状态机 (Synchronized FSM)**：解答“为什么没有物理分隔符，解码端也能断句”的终极疑问。
-* 解析编码器预定义逻辑在硬件层面的同步机制。
+### 🌟 [HEVC CABAC EMC Hardware Interactive Sandbox](https://edgerzou-stack.github.io/hevc-cabac-emc-dashboard/index.html)
+- **Target Audience:** RTL Designers, Algorithm Engineers, and Video Codec Researchers.
+- **Content:** An interactive breakdown of the Entropy Coding Module (EMC) scheduling, the CABAC compression engine, and the bitstream decryption mechanics.
+- **Highlights:**
+  - **Z-Scan Spatial Engine:** Visualizes the 64x64 CTU depth stack and asynchronous FIFO architecture.
+  - **Interactive Binarization & Range LUT:** Manually step through the multiplication-free Range interval splitting and context modeling (Ctx) mapping.
+  - **5-Pass Coeff Scanning:** An animated derivation of the hardware-friendly 5-pass reverse diagonal scanning mechanism for residual coefficients.
+  - **Synchronized FSM:** Sequence diagrams revealing the "delimiter-free" parser logic synchronized between encoder and decoder.
 
-## 🚀 部署与使用
+## 🚀 Local Deployment
 
-由于本平台是一个纯粹的单文件前端应用 (HTML + 纯手工 JS + 原生 CSS)，**零依赖，零构建配置**！
+Since this platform is a pure single-file frontend application (HTML + Vanilla JS + Native CSS), it requires **zero dependencies and zero build configuration**!
 
-你可以直接：
-1. `git clone` 本仓库
-2. 在任意现代浏览器中双击打开 `index.html` 即可畅玩所有的动画推演和算术引擎模拟。
-3. （推荐）通过 GitHub Pages 或任意静态 Web 服务器托管，直接在线访问。
-
-## ⚙️ 架构与设计理念
-
-* **纯净无框架**：没有庞大的 React 或 Vue 依赖，所有复杂的区间切分运算和动画，均采用纯原生 Web API 和微量 JS 脚本编写，追求极致加载速度。
-* **C-Model 拟真**：底层的 Range、Low 归一化逻辑，以及 5 趟扫描的拆解，力求还原实际硅片中数字逻辑电路的思考方式，是芯片设计工程师与算法工程师沟通的最佳视觉桥梁。
+1. `git clone` this repository.
+2. Double-click `index.html` in any modern browser to explore the interactive simulations.
 
 ---
 *Created and maintained by edgerzou-stack.*
