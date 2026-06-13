@@ -847,6 +847,178 @@
         </ul>
     </div>
 
+
+<h3 style="margin-top: 40px; color: var(--primary);">3.7 数组寻址术：深入 Ctx 的计算过程 (以 cu_skip_flag 为例)</h3>
+<p style="font-size: 0.95em; color: #475569;">
+    你是否好奇，所谓的“环境上下文”在 C-Model 底层究竟是怎么转化成一个数组索引的？让我们严格按照 <code>TComDataCU::getCtxSkipFlag()</code> 的真实 C++ 代码，来进行一次互动推演。
+</p>
+
+<div style="background: #ffffff; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+    
+    <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+        <!-- Left Panel: Spatial Blocks & C++ Code -->
+        <div style="flex: 1; min-width: 300px;">
+            <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">📌 步骤 1：探测空间相邻块</h4>
+            <p style="font-size: 0.85em; color: #64748b;">
+                点击下方周围的色块，切换它们的 <code>isSkipped</code> 状态。这会模拟解码器对左侧和上方相邻宏块状态的检查。
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 80px 80px; grid-template-rows: 80px 80px; gap: 10px; margin: 20px auto; width: 170px; position: relative;">
+                <!-- Top Left Empty -->
+                <div></div>
+                <!-- Top PU -->
+                <div id="btnTopPU" style="background: #e2e8f0; border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; user-select: none;">
+                    <span style="font-size: 0.7em; color: #475569; font-weight: bold;">Above PU</span>
+                    <span id="txtTopPU" style="font-size: 0.9em; color: #ef4444; font-weight: bold;">False (0)</span>
+                </div>
+                <!-- Left PU -->
+                <div id="btnLeftPU" style="background: #e2e8f0; border: 2px dashed #94a3b8; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; user-select: none;">
+                    <span style="font-size: 0.7em; color: #475569; font-weight: bold;">Left PU</span>
+                    <span id="txtLeftPU" style="font-size: 0.9em; color: #ef4444; font-weight: bold;">False (0)</span>
+                </div>
+                <!-- Current PU -->
+                <div style="background: #3b82f6; border: 2px solid #1d4ed8; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 0.9em; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
+                    当前 CU
+                </div>
+            </div>
+
+            <!-- C-Model Code block -->
+            <div style="background: #1e293b; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 0.85em; color: #e2e8f0; line-height: 1.5; overflow-x: auto;">
+<span style="color: #c678dd;">UInt</span> TComDataCU::getCtxSkipFlag() {
+  <span style="color: #c678dd;">UInt</span> uiCtx = <span style="color: #d19a66;">0</span>;
+  <span style="color: #7f848e;">// Get BCBP of left PU</span>
+  uiCtx  = (left) ? left-&gt;isSkipped() : <span style="color: #d19a66;">0</span>;
+  <span style="color: #7f848e;">// Get BCBP of above PU</span>
+  uiCtx += (above) ? above-&gt;isSkipped() : <span style="color: #d19a66;">0</span>;
+  <span style="color: #c678dd;">return</span> uiCtx; <span style="color: #7f848e;">// 当前结果: <span id="codeResultCtx" style="color: #e5c07b; font-weight: bold; background: rgba(255,255,255,0.1); padding: 0 4px; border-radius: 3px;">0</span></span>
+}
+            </div>
+        </div>
+
+        <!-- Right Panel: Array Memory & Model State -->
+        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+            <h4 style="margin-top: 0; color: #333; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">📌 步骤 2：在 ContextModel3DBuffer 中寻址</h4>
+            <p style="font-size: 0.85em; color: #64748b; margin-bottom: 15px;">
+                C-Model 使用 <code>m_cCUSkipFlagSCModel.get(0, 0, uiCtx)</code> 方法从一维数组中取回具体的 <code>ContextModel</code> 实例。
+            </p>
+            
+            <!-- Context Array Visualization -->
+            <div style="display: flex; justify-content: space-around; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #cbd5e1; position: relative;">
+                <div class="ctx-array-item active" id="ctxItem0" style="width: 30%; background: #ffffff; border: 2px solid #3b82f6; border-radius: 6px; padding: 10px; text-align: center; transition: 0.3s; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);">
+                    <div style="font-size: 0.7em; color: #64748b;">uiCtx = 0</div>
+                    <div style="font-size: 0.85em; font-weight: bold; color: #333; margin-top: 4px;">ContextModel[0]</div>
+                </div>
+                <div class="ctx-array-item" id="ctxItem1" style="width: 30%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; transition: 0.3s; opacity: 0.5;">
+                    <div style="font-size: 0.7em; color: #64748b;">uiCtx = 1</div>
+                    <div style="font-size: 0.85em; font-weight: bold; color: #333; margin-top: 4px;">ContextModel[1]</div>
+                </div>
+                <div class="ctx-array-item" id="ctxItem2" style="width: 30%; background: #ffffff; border: 2px solid #e2e8f0; border-radius: 6px; padding: 10px; text-align: center; transition: 0.3s; opacity: 0.5;">
+                    <div style="font-size: 0.7em; color: #64748b;">uiCtx = 2</div>
+                    <div style="font-size: 0.85em; font-weight: bold; color: #333; margin-top: 4px;">ContextModel[2]</div>
+                </div>
+            </div>
+
+            <!-- ContextModel Internal State -->
+            <div style="margin-top: 25px; flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <div style="position: absolute; top: -10px; background: #3b82f6; color: white; font-size: 0.7em; font-weight: bold; padding: 4px 10px; border-radius: 12px; letter-spacing: 1px;">内部状态: m_ucState (6 bit)</div>
+                <div style="font-size: 0.85em; color: #1e40af; text-align: center; margin-bottom: 15px;">
+                    此时，CABAC 引擎拿到了这把钥匙，揭开了抽屉里记录的真实概率。
+                </div>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div style="background: white; border: 2px solid #93c5fd; padding: 10px 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.7em; color: #64748b; margin-bottom: 4px;">pStateIdx (状态机索引)</div>
+                        <div id="dispStateIdx" style="font-size: 1.5em; font-weight: bold; color: #1e3a8a; font-family: monospace;">24</div>
+                    </div>
+                    <div style="background: white; border: 2px solid #93c5fd; padding: 10px 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 0.7em; color: #64748b; margin-bottom: 4px;">MPS (最可能符号)</div>
+                        <div id="dispMPS" style="font-size: 1.5em; font-weight: bold; color: #1e3a8a; font-family: monospace;">0</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.8em; color: #475569; margin-top: 15px; text-align: center; line-height: 1.5;">
+                    <strong style="color: #3b82f6;">💡 闭环：</strong>RDO 会拿着这个 <code style="background: #e0f2fe; padding: 2px 4px; border-radius: 3px;">pStateIdx</code> 去查 <code>getEntropyBits()</code> 表，得出准确的 Fractional Bits，进而算出 Rate Cost！
+                </p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // Logic for Ctx Calculation Visualization
+    document.addEventListener("DOMContentLoaded", () => {
+        let leftSkip = false;
+        let topSkip = false;
+
+        const btnLeft = document.getElementById("btnLeftPU");
+        const btnTop = document.getElementById("btnTopPU");
+        const txtLeft = document.getElementById("txtLeftPU");
+        const txtTop = document.getElementById("txtTopPU");
+        const codeResult = document.getElementById("codeResultCtx");
+        
+        const ctxItems = [
+            document.getElementById("ctxItem0"),
+            document.getElementById("ctxItem1"),
+            document.getElementById("ctxItem2")
+        ];
+
+        const dispStateIdx = document.getElementById("dispStateIdx");
+        const dispMPS = document.getElementById("dispMPS");
+
+        // Mock pStateIdx values for the 3 context models (just for demonstration)
+        const mockStates = [
+            { pStateIdx: 24, mps: 0 }, // Ctx=0: left & top not skip -> probably not skip
+            { pStateIdx: 48, mps: 0 }, // Ctx=1: one is skip -> intermediate
+            { pStateIdx: 12, mps: 1 }  // Ctx=2: both are skip -> probably skip (MPS=1)
+        ];
+
+        function updateCtxUI() {
+            // Update buttons
+            txtLeft.textContent = leftSkip ? "True (1)" : "False (0)";
+            txtLeft.style.color = leftSkip ? "#10b981" : "#ef4444";
+            btnLeft.style.borderColor = leftSkip ? "#10b981" : "#94a3b8";
+            btnLeft.style.background = leftSkip ? "#d1fae5" : "#e2e8f0";
+
+            txtTop.textContent = topSkip ? "True (1)" : "False (0)";
+            txtTop.style.color = topSkip ? "#10b981" : "#ef4444";
+            btnTop.style.borderColor = topSkip ? "#10b981" : "#94a3b8";
+            btnTop.style.background = topSkip ? "#d1fae5" : "#e2e8f0";
+
+            // Calculate uiCtx
+            const uiCtx = (leftSkip ? 1 : 0) + (topSkip ? 1 : 0);
+            codeResult.textContent = uiCtx;
+
+            // Highlight array
+            ctxItems.forEach((el, index) => {
+                if (index === uiCtx) {
+                    el.style.opacity = "1";
+                    el.style.borderColor = "#3b82f6";
+                    el.style.boxShadow = "0 0 10px rgba(59, 130, 246, 0.4)";
+                } else {
+                    el.style.opacity = "0.5";
+                    el.style.borderColor = "#e2e8f0";
+                    el.style.boxShadow = "none";
+                }
+            });
+
+            // Update internal state display
+            dispStateIdx.textContent = mockStates[uiCtx].pStateIdx;
+            dispMPS.textContent = mockStates[uiCtx].mps;
+        }
+
+        btnLeft.addEventListener("click", () => {
+            leftSkip = !leftSkip;
+            updateCtxUI();
+        });
+
+        btnTop.addEventListener("click", () => {
+            topSkip = !topSkip;
+            updateCtxUI();
+        });
+
+        // Initialize
+        updateCtxUI();
+    });
+</script>
 <h2 style="border-top: 2px solid #e2e8f0; padding-top: 30px; margin-top: 40px; color: var(--primary);">4. 深度解密：没有分隔符的比特流，解码端凭什么能看懂？</h2>
     <h3>4.1 宏观领航：FSM 状态机与协议默契</h3>
     <p style="font-size: 0.95em; color: #475569;">这是 CABAC 学习者最常问、也是直觉上最反常识的问题：<br>
