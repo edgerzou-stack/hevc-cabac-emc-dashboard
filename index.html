@@ -972,10 +972,27 @@
         <div style="font-size: 1.2em; color: #1e293b; overflow-x: auto;">
             \[ EntropyBits\_Int = \lfloor - \log_2(P_{symbol}) \times 2^{15} + 0.5 \rfloor \]
         </div>
+        
         <p style="margin: 10px 0 0 0; font-size: 0.85em; color: #64748b; text-align: left;">
             * 其中 \( P_{symbol} \) 是当前状态下该符号（MPS或LPS）的发生概率。<br>
             * \( 2^{15} = 32768 \)，这是为了将浮点数转换成 15-bit 精度的定点整数。
         </p>
+
+        <!-- P Calculation Expansion -->
+        <div style="margin-top: 15px; text-align: left; background: #f1f5f9; padding: 12px; border-radius: 6px; border-left: 3px solid #64748b;">
+            <p style="margin: 0; font-size: 0.85em; color: #334155; font-weight: bold;">💡 进阶：发生概率 \( P \) 究竟是怎么从 pStateIdx 算出来的？</p>
+            <p style="margin: 8px 0 0 0; font-size: 0.8em; color: #475569; line-height: 1.6;">
+                在 CABAC 标准中，64 个状态 <code>pStateIdx</code> (0~63) 并非线性对应概率，而是呈<strong>指数衰减</strong>关系。标准中预设了最不期望符号 (LPS) 的概率范围大致从 <code>0.5</code> 到 <code>0.01875</code>：
+            </p>
+            <div style="font-size: 1.1em; color: #1e293b; overflow-x: auto; text-align: center; margin: 10px 0;">
+                \[ P_{LPS}(x) = 0.5 \times \alpha^x \quad (其中\ x = pStateIdx) \]
+                \[ \alpha = \left( \frac{0.01875}{0.5} \right)^{\frac{1}{63}} \approx 0.9492 \]
+            </div>
+            <p style="margin: 0; font-size: 0.8em; color: #475569; line-height: 1.6;">
+                算出 \( P_{LPS} \) 后，\( P_{MPS} = 1 - P_{LPS} \)。根据当前要编码的 <code>val</code> 是 MPS 还是 LPS，将其对应的 \( P \) 代入顶部的对数公式，就得到了那 128 个定点化的分数比特值！这一切复杂的浮点运算，都在 HM 编译前被算好并写死在了 <code>m_entropyBits</code> 常量数组中。
+            </p>
+        </div>
+
     </div>
 
     <p style="font-size: 0.9em; line-height: 1.6; color: #334155; margin-bottom: 0;">
