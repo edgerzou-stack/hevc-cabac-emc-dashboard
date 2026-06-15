@@ -17,9 +17,10 @@ You can directly access the interactive online documentation via the following l
 - **Content:** An interactive breakdown of the Entropy Coding Module (EMC) scheduling, the CABAC compression engine, and the bitstream decryption mechanics.
 - **Highlights:**
   - **Z-Scan Spatial Engine:** Visualizes the 64x64 CTU depth stack and asynchronous FIFO architecture.
-  - **Interactive Binarization & Range LUT:** Manually step through the multiplication-free Range interval splitting and context modeling (Ctx) mapping.
+  - **Interactive Binarization & Range LUT:** Manually step through the multiplication-free Range interval splitting.
+  - **Interactive Context (Ctx) Modeling Sandbox:** Features a dual-mode (Manual/Auto-play) state machine visualization, instantly mapping spatial PU conditions to `ContextModel3DBuffer` 1D array indices and revealing the internal `pStateIdx` 6-bit registers.
+  - **Mathematical Demystification:** Employs MathJax LaTeX rendering to break down the probability-to-bits theoretical pipeline ($P_{LPS}$ exponential decay $\rightarrow$ 15-bit fixed-point fractional `m_entropyBits`).
   - **5-Pass Coeff Scanning:** An animated derivation of the hardware-friendly 5-pass reverse diagonal scanning mechanism for residual coefficients.
-  - **Synchronized FSM:** Sequence diagrams revealing the "delimiter-free" parser logic synchronized between encoder and decoder.
 
 ## 🚀 Local Deployment
 
